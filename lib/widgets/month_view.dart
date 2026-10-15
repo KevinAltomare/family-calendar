@@ -14,6 +14,10 @@ class MonthView extends StatelessWidget {
     final firstDay = DateTime(year, month, 1);
     final daysInMonth = DateTime(year, month + 1, 0).day;
     final startWeekday = firstDay.weekday % 7; // Sunday = 0
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
+    final cellWidth = (MediaQuery.sizeOf(context).width - 16) / 7;
+    final landscapeAspectRatio = (cellWidth / 72).clamp(0.8, 1.45).toDouble();
 
     return AnimatedBuilder(
       animation: CalendarService.instance,
@@ -24,15 +28,16 @@ class MonthView extends StatelessWidget {
             DayCell(
               day: day,
               date: DateTime(year, month, day),
-              hasEvents: CalendarService.instance
-                  .eventsOn(DateTime(year, month, day))
-                  .isNotEmpty,
+              events: CalendarService.instance.eventsOn(
+                DateTime(year, month, day),
+              ),
+              showEventPreviews: isLandscape,
             ),
         ];
 
         return GridView.count(
           crossAxisCount: 7,
-          childAspectRatio: 1.2,
+          childAspectRatio: isLandscape ? landscapeAspectRatio : 1.2,
           padding: const EdgeInsets.all(8),
           children: cells,
         );

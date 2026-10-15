@@ -1,6 +1,7 @@
 import 'package:calendar_app/models/calendar_event.dart';
 import 'package:calendar_app/screens/home_screen.dart';
 import 'package:calendar_app/services/calendar_service.dart';
+import 'package:calendar_app/widgets/month_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +24,56 @@ void main() {
     await tester.tap(find.text('Today'));
     await tester.pumpAndSettle();
     expect(find.text('No events for this day'), findsOneWidget);
+  });
+
+  testWidgets('landscape month cells preview colored events and overflow', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final now = DateTime.now();
+    final firstDay = DateTime(now.year, now.month, 1);
+    await CalendarService.instance.addEvent(
+      CalendarEvent(
+        id: 'soccer',
+        title: 'Soccer practice',
+        familyMember: 'Ethan',
+        startTime: DateTime(firstDay.year, firstDay.month, firstDay.day, 9),
+      ),
+    );
+    await CalendarService.instance.addEvent(
+      CalendarEvent(
+        id: 'piano',
+        title: 'Piano lesson',
+        familyMember: 'Micah',
+        startTime: DateTime(firstDay.year, firstDay.month, firstDay.day, 10),
+      ),
+    );
+    await CalendarService.instance.addEvent(
+      CalendarEvent(
+        id: 'dentist',
+        title: 'Dentist',
+        familyMember: 'Mom',
+        startTime: DateTime(firstDay.year, firstDay.month, firstDay.day, 11),
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MonthView(year: now.year, month: now.month),
+        ),
+      ),
+    );
+
+    final soccerPreview = tester.widget<Text>(find.text('Soccer practice'));
+    expect(soccerPreview.style?.color, const Color(0xFF2E7D32));
+    expect(find.text('Piano lesson'), findsOneWidget);
+    expect(find.text('+1'), findsOneWidget);
+    expect(find.text('Dentist'), findsNothing);
   });
 
   testWidgets('add event button saves an event to local storage', (

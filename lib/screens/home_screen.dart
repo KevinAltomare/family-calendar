@@ -126,12 +126,16 @@ class _MonthScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 22, 16, 18),
+          padding: isLandscape
+              ? const EdgeInsets.fromLTRB(16, 6, 12, 4)
+              : const EdgeInsets.fromLTRB(24, 22, 16, 18),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -148,24 +152,26 @@ class _MonthScreen extends StatelessWidget {
                         letterSpacing: 1.4,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: isLandscape ? 2 : 8),
                     Text(
                       '${_monthName(now.month)} ${now.year}',
-                      style: const TextStyle(
-                        color: Color(0xFF202A38),
-                        fontSize: 32,
+                      style: TextStyle(
+                        color: const Color(0xFF202A38),
+                        fontSize: isLandscape ? 24 : 32,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.8,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'I can\'t believe the month already halfway over!',
-                      style: TextStyle(
-                        color: Color(0xFF7B8491),
-                        fontSize: 15,
+                    if (!isLandscape) ...[
+                      const SizedBox(height: 4),
+                      const Text(
+                        'I can\'t believe the month already halfway over!',
+                        style: TextStyle(
+                          color: Color(0xFF7B8491),
+                          fontSize: 15,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -184,7 +190,9 @@ class _MonthScreen extends StatelessWidget {
               return Expanded(
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: EdgeInsets.symmetric(
+                      vertical: isLandscape ? 4 : 10,
+                    ),
                     child: Text(
                       day,
                       style: const TextStyle(
