@@ -7,9 +7,9 @@ class DayCell extends StatelessWidget {
   final bool hasEvents;
   final DateTime? date;
 
-  DayCell({required this.day, required this.date, this.hasEvents = false});
+  const DayCell({super.key, required this.day, required this.date, this.hasEvents = false});
 
-  DayCell.empty() : day = null, date = null, hasEvents = false;
+  const DayCell.empty({super.key}) : day = null, date = null, hasEvents = false;
 
   @override
   Widget build(BuildContext context) {

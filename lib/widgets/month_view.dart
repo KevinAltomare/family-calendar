@@ -7,7 +7,7 @@ class MonthView extends StatelessWidget {
   final int year;
   final int month;
 
-  MonthView({required this.year, required this.month});
+  const MonthView({super.key, required this.year, required this.month});
 
   @override
   Widget build(BuildContext context) {
