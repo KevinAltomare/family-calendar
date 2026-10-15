@@ -1,0 +1,63 @@
+import 'package:flutter/material.dart';
+
+import '../screens/settings_screen.dart';
+import '../services/calendar_service.dart';
+import 'event_tile.dart';
+
+class DayView extends StatelessWidget {
+  final DateTime date;
+
+  const DayView({super.key, required this.date});
+
+  @override
+  Widget build(BuildContext context) {
+    final dateLabel = MaterialLocalizations.of(context).formatFullDate(date);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(dateLabel),
+        actions: [
+          IconButton(
+            tooltip: 'Settings',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const SettingsScreen(),
+              ),
+            ),
+            icon: const Icon(Icons.settings_outlined),
+          ),
+        ],
+      ),
+      body: AnimatedBuilder(
+        animation: CalendarService.instance,
+        builder: (context, _) {
+          final events = CalendarService.instance.eventsOn(date);
+          if (events.isEmpty) {
+            return const Center(
+              child: Text(
+                'No events for this day',
+                style: TextStyle(color: Color(0xFF7B8491), fontSize: 16),
+              ),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: events.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final event = events[index];
+              return EventTile(
+                title: event.title,
+                startTime: event.startTime,
+                endTime: event.endTime,
+                familyMember: event.familyMember,
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
