@@ -5,6 +5,7 @@ import '../services/calendar_service.dart';
 import '../widgets/day_view.dart';
 import '../widgets/month_view.dart';
 import '../widgets/week_view.dart';
+import '../widgets/year_view.dart';
 import 'add_event_screen.dart';
 import 'settings_screen.dart';
 
@@ -17,13 +18,19 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  late DateTime _displayedMonth;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _displayedMonth = DateTime(now.year, now.month);
+  }
 
   Future<void> _openAddEvent() async {
     final event = await Navigator.push<CalendarEvent>(
       context,
-      MaterialPageRoute<CalendarEvent>(
-        builder: (_) => const AddEventScreen(),
-      ),
+      MaterialPageRoute<CalendarEvent>(builder: (_) => const AddEventScreen()),
     );
     if (event == null || !mounted) {
       return;
@@ -35,9 +42,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not save event: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not save event: $error')));
     }
   }
 
@@ -59,8 +66,20 @@ class _HomeScreenState extends State<HomeScreen> {
           index: _selectedIndex,
           children: [
             _MonthScreen(
-              now: now,
+              month: _displayedMonth,
+              onMonthChanged: (month) =>
+                  setState(() => _displayedMonth = month),
               onOpenSettings: _openSettings,
+            ),
+            YearView(
+              year: _displayedMonth.year,
+              onYearChanged: (year) => setState(
+                () => _displayedMonth = DateTime(year, _displayedMonth.month),
+              ),
+              onMonthSelected: (month) => setState(() {
+                _displayedMonth = month;
+                _selectedIndex = 0;
+              }),
             ),
             WeekView(initialDate: now),
             DayView(date: DateTime(now.year, now.month, now.day)),
@@ -84,18 +103,25 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => setState(() => _selectedIndex = 0),
             ),
             _NavigationItem(
-              icon: Icons.view_week_rounded,
-              label: 'Week',
+              icon: Icons.calendar_view_month_rounded,
+              label: 'Year',
               selected: _selectedIndex == 1,
               color: colors.primary,
               onTap: () => setState(() => _selectedIndex = 1),
             ),
             _NavigationItem(
-              icon: Icons.today_rounded,
-              label: 'Today',
+              icon: Icons.view_week_rounded,
+              label: 'Week',
               selected: _selectedIndex == 2,
               color: colors.primary,
               onTap: () => setState(() => _selectedIndex = 2),
+            ),
+            _NavigationItem(
+              icon: Icons.today_rounded,
+              label: 'Today',
+              selected: _selectedIndex == 3,
+              color: colors.primary,
+              onTap: () => setState(() => _selectedIndex = 3),
             ),
             IconButton.filled(
               tooltip: 'Add event',
@@ -115,11 +141,13 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _MonthScreen extends StatelessWidget {
-  final DateTime now;
+  final DateTime month;
+  final ValueChanged<DateTime> onMonthChanged;
   final VoidCallback onOpenSettings;
 
   const _MonthScreen({
-    required this.now,
+    required this.month,
+    required this.onMonthChanged,
     required this.onOpenSettings,
   });
 
@@ -153,14 +181,38 @@ class _MonthScreen extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: isLandscape ? 2 : 8),
-                    Text(
-                      '${_monthName(now.month)} ${now.year}',
-                      style: TextStyle(
-                        color: const Color(0xFF202A38),
-                        fontSize: isLandscape ? 24 : 32,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.8,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${_monthName(month.month)} ${month.year}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: const Color(0xFF202A38),
+                              fontSize: isLandscape ? 24 : 28,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.8,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Previous month',
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => onMonthChanged(
+                            DateTime(month.year, month.month - 1),
+                          ),
+                          icon: const Icon(Icons.chevron_left_rounded),
+                        ),
+                        IconButton(
+                          tooltip: 'Next month',
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => onMonthChanged(
+                            DateTime(month.year, month.month + 1),
+                          ),
+                          icon: const Icon(Icons.chevron_right_rounded),
+                        ),
+                      ],
                     ),
                     if (!isLandscape) ...[
                       const SizedBox(height: 4),
@@ -208,7 +260,7 @@ class _MonthScreen extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: MonthView(year: now.year, month: now.month),
+          child: MonthView(year: month.year, month: month.month),
         ),
       ],
     );
@@ -260,7 +312,7 @@ class _NavigationItem extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

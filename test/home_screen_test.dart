@@ -28,6 +28,41 @@ void main() {
     expect(find.text('No events for this day'), findsOneWidget);
   });
 
+  testWidgets('year view browses years and opens navigable months', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+
+    await tester.tap(find.text('Year'));
+    await tester.pumpAndSettle();
+
+    final currentYear = DateTime.now().year;
+    expect(find.text('YEAR OVERVIEW'), findsOneWidget);
+    expect(find.text('$currentYear'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Next year'));
+    await tester.pumpAndSettle();
+    expect(find.text('${currentYear + 1}'), findsOneWidget);
+
+    await tester.tap(find.text('Jan'));
+    await tester.pumpAndSettle();
+    expect(find.text('January ${currentYear + 1}'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Previous month'));
+    await tester.pumpAndSettle();
+    expect(find.text('December $currentYear'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Next month'));
+    await tester.pumpAndSettle();
+    expect(find.text('January ${currentYear + 1}'), findsOneWidget);
+
+    await tester.tap(find.text('Year'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Previous year'));
+    await tester.pumpAndSettle();
+    expect(find.text('$currentYear'), findsOneWidget);
+  });
+
   testWidgets('landscape month cells preview colored events and overflow', (
     tester,
   ) async {

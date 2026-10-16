@@ -67,7 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 contentPadding: EdgeInsets.symmetric(horizontal: 16),
                 leading: _SettingsIcon(icon: Icons.info_outline_rounded),
-                title: Text('Calendar App'),
+                title: Text('Altomare Hub'),
                 subtitle: Text('Version 0.1.0'),
               ),
             ],
