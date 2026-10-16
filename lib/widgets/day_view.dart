@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../models/calendar_event.dart';
+import '../screens/add_event_screen.dart';
 import '../screens/settings_screen.dart';
 import '../services/calendar_service.dart';
 import 'event_tile.dart';
@@ -8,6 +10,29 @@ class DayView extends StatelessWidget {
   final DateTime date;
 
   const DayView({super.key, required this.date});
+
+  Future<void> _addEvent(BuildContext context) async {
+    final event = await Navigator.push<CalendarEvent>(
+      context,
+      MaterialPageRoute<CalendarEvent>(
+        builder: (_) => AddEventScreen(initialDate: date),
+      ),
+    );
+    if (event == null || !context.mounted) {
+      return;
+    }
+
+    try {
+      await CalendarService.instance.addEvent(event);
+    } catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not save event: $error')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,12 +43,15 @@ class DayView extends StatelessWidget {
         title: Text(dateLabel),
         actions: [
           IconButton(
+            tooltip: 'Add event',
+            onPressed: () => _addEvent(context),
+            icon: const Icon(Icons.add_rounded),
+          ),
+          IconButton(
             tooltip: 'Settings',
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute<void>(
-                builder: (_) => const SettingsScreen(),
-              ),
+              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
             ),
             icon: const Icon(Icons.settings_outlined),
           ),

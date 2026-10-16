@@ -157,7 +157,7 @@ class _EventPreview extends StatelessWidget {
       'ethan' => const Color(0xFF2E7D32),
       'micah' => const Color(0xFFC2185B),
       'mom' => const Color(0xFF7B1FA2),
-      'dad' => const Color(0xFFC62828),
+      'dad' => const Color.fromARGB(255, 240, 220, 46),
       'eli' => const Color(0xFF1565C0),
       _ => const Color(0xFF6B7280),
     };

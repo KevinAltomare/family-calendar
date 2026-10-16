@@ -1,6 +1,8 @@
 import 'package:calendar_app/models/calendar_event.dart';
+import 'package:calendar_app/screens/add_event_screen.dart';
 import 'package:calendar_app/screens/home_screen.dart';
 import 'package:calendar_app/services/calendar_service.dart';
+import 'package:calendar_app/widgets/day_view.dart';
 import 'package:calendar_app/widgets/month_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -74,6 +76,32 @@ void main() {
     expect(find.text('Piano lesson'), findsOneWidget);
     expect(find.text('+1'), findsOneWidget);
     expect(find.text('Dentist'), findsNothing);
+  });
+
+  testWidgets('day view adds an event to the selected date', (tester) async {
+    final selectedDate = DateTime(2026, 10, 20);
+    await tester.pumpWidget(MaterialApp(home: DayView(date: selectedDate)));
+
+    await tester.tap(find.byTooltip('Add event'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        MaterialLocalizations.of(tester.element(find.byType(AddEventScreen)))
+            .formatMediumDate(selectedDate),
+      ),
+      findsOneWidget,
+    );
+    await tester.enterText(find.byType(TextFormField), 'Library visit');
+    await tester.tap(find.text('Select a family member'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Eli').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save event'));
+    await tester.pumpAndSettle();
+
+    expect(CalendarService.instance.eventsOn(selectedDate), hasLength(1));
+    expect(find.text('Library visit'), findsOneWidget);
   });
 
   testWidgets('add event button saves an event to local storage', (

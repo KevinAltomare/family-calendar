@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/calendar_event.dart';
 
 class AddEventScreen extends StatefulWidget {
-  const AddEventScreen({super.key});
+  final DateTime? initialDate;
+
+  const AddEventScreen({super.key, this.initialDate});
 
   @override
   State<AddEventScreen> createState() => _AddEventScreenState();
@@ -19,6 +21,15 @@ class _AddEventScreenState extends State<AddEventScreen> {
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
   String? _timeError;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialDate = widget.initialDate;
+    if (initialDate != null) {
+      _date = DateTime(initialDate.year, initialDate.month, initialDate.day);
+    }
+  }
 
   @override
   void dispose() {
