@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../screens/settings_screen.dart';
 import '../services/calendar_service.dart';
+import 'event_actions.dart';
 import 'event_tile.dart';
 
 class WeekView extends StatefulWidget {
@@ -50,9 +51,7 @@ class _WeekViewState extends State<WeekView> {
             tooltip: 'Settings',
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute<void>(
-                builder: (_) => const SettingsScreen(),
-              ),
+              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
             ),
             icon: const Icon(Icons.settings_outlined),
           ),
@@ -173,6 +172,7 @@ class _WeekViewState extends State<WeekView> {
                       startTime: event.startTime,
                       endTime: event.endTime,
                       familyMember: event.familyMember,
+                      onTap: () => handleEventTap(context, event),
                     );
                   },
                 );

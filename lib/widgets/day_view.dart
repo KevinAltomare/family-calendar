@@ -4,6 +4,7 @@ import '../models/calendar_event.dart';
 import '../screens/add_event_screen.dart';
 import '../screens/settings_screen.dart';
 import '../services/calendar_service.dart';
+import 'event_actions.dart';
 import 'event_tile.dart';
 
 class DayView extends StatelessWidget {
@@ -81,6 +82,7 @@ class DayView extends StatelessWidget {
                 startTime: event.startTime,
                 endTime: event.endTime,
                 familyMember: event.familyMember,
+                onTap: () => handleEventTap(context, event),
               );
             },
           );

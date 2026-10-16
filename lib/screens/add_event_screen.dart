@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:rrule/rrule.dart';
 
 import '../models/calendar_event.dart';
 
 class AddEventScreen extends StatefulWidget {
   final DateTime? initialDate;
+  final CalendarEvent? initialEvent;
+  final bool disableRecurrence;
 
-  const AddEventScreen({super.key, this.initialDate});
+  const AddEventScreen({
+    super.key,
+    this.initialDate,
+    this.initialEvent,
+    this.disableRecurrence = false,
+  });
 
   @override
   State<AddEventScreen> createState() => _AddEventScreenState();
@@ -13,21 +21,66 @@ class AddEventScreen extends StatefulWidget {
 
 class _AddEventScreenState extends State<AddEventScreen> {
   static const _familyMembers = ['Ethan', 'Micah', 'Eli', 'Mom', 'Dad'];
+  static const _weekdays = [
+    (label: 'S', day: DateTime.sunday),
+    (label: 'M', day: DateTime.monday),
+    (label: 'T', day: DateTime.tuesday),
+    (label: 'W', day: DateTime.wednesday),
+    (label: 'T', day: DateTime.thursday),
+    (label: 'F', day: DateTime.friday),
+    (label: 'S', day: DateTime.saturday),
+  ];
 
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   String? _selectedFamilyMember;
   DateTime _date = DateTime.now();
+  DateTime? _repeatUntil;
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
+  _RepeatFrequency _repeatFrequency = _RepeatFrequency.never;
+  final Set<int> _selectedWeekdays = {};
   String? _timeError;
+  String? _recurrenceError;
 
   @override
   void initState() {
     super.initState();
-    final initialDate = widget.initialDate;
+    final initialEvent = widget.initialEvent;
+    final initialDate = initialEvent?.startTime ?? widget.initialDate;
     if (initialDate != null) {
       _date = DateTime(initialDate.year, initialDate.month, initialDate.day);
+    }
+    if (initialEvent != null) {
+      _titleController.text = initialEvent.title;
+      _selectedFamilyMember = initialEvent.familyMember;
+      _startTime = TimeOfDay.fromDateTime(initialEvent.startTime);
+      final endTime = initialEvent.endTime;
+      if (endTime != null) {
+        _endTime = TimeOfDay.fromDateTime(endTime);
+      }
+
+      final ruleString = initialEvent.recurrenceRule;
+      if (ruleString != null && !widget.disableRecurrence) {
+        final rule = RecurrenceRule.fromString(ruleString);
+        _repeatFrequency = switch (rule.frequency) {
+          Frequency.daily => _RepeatFrequency.daily,
+          Frequency.weekly => _RepeatFrequency.weekly,
+          Frequency.monthly => _RepeatFrequency.monthly,
+          _ => _RepeatFrequency.never,
+        };
+        _selectedWeekdays.addAll(rule.byWeekDays.map((entry) => entry.day));
+        final until = rule.until;
+        if (until != null) {
+          _repeatUntil = DateTime(until.year, until.month, until.day);
+        }
+      }
+      if (_repeatFrequency == _RepeatFrequency.weekly &&
+          _selectedWeekdays.isEmpty) {
+        _selectedWeekdays.add(_date.weekday);
+      }
+    } else {
+      _selectedWeekdays.add(_date.weekday);
     }
   }
 
@@ -46,6 +99,19 @@ class _AddEventScreenState extends State<AddEventScreen> {
     );
     if (date != null) {
       setState(() => _date = date);
+    }
+  }
+
+  Future<void> _selectRepeatUntil() async {
+    final initialDate = _repeatUntil ?? _date.add(const Duration(days: 30));
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initialDate.isBefore(_date) ? _date : initialDate,
+      firstDate: _date,
+      lastDate: DateTime(2100),
+    );
+    if (date != null) {
+      setState(() => _repeatUntil = date);
     }
   }
 
@@ -70,6 +136,17 @@ class _AddEventScreenState extends State<AddEventScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+    if (_repeatUntil != null && _repeatUntil!.isBefore(_date)) {
+      setState(
+        () => _recurrenceError = 'End date must be on or after the event date.',
+      );
+      return;
+    }
+    if (_repeatFrequency == _RepeatFrequency.weekly &&
+        _selectedWeekdays.isEmpty) {
+      setState(() => _recurrenceError = 'Select at least one day.');
+      return;
+    }
 
     final start = DateTime(
       _date.year,
@@ -90,24 +167,55 @@ class _AddEventScreenState extends State<AddEventScreen> {
       return;
     }
 
+    final recurrenceRule = switch (_repeatFrequency) {
+      _RepeatFrequency.never => null,
+      _RepeatFrequency.daily => _buildRecurrenceRule(Frequency.daily),
+      _RepeatFrequency.weekly => _buildRecurrenceRule(
+        Frequency.weekly,
+        byWeekDays: _selectedWeekdays,
+      ),
+      _RepeatFrequency.monthly => _buildRecurrenceRule(Frequency.monthly),
+    };
+    final initialEvent = widget.initialEvent;
     Navigator.pop(
       context,
       CalendarEvent(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        id:
+            initialEvent?.id ??
+            DateTime.now().microsecondsSinceEpoch.toString(),
         title: _titleController.text.trim(),
         familyMember: _selectedFamilyMember,
         startTime: start,
         endTime: end,
+        recurrenceRule: recurrenceRule,
+        skipDates: recurrenceRule == null
+            ? const []
+            : initialEvent?.skipDates ?? const [],
       ),
     );
+  }
+
+  String _buildRecurrenceRule(
+    Frequency frequency, {
+    Set<int> byWeekDays = const {},
+  }) {
+    final until = _repeatUntil;
+    return RecurrenceRule(
+      frequency: frequency,
+      byWeekDays: byWeekDays.map(ByWeekDayEntry.new).toList(),
+      until: until == null
+          ? null
+          : DateTime.utc(until.year, until.month, until.day, 23, 59, 59),
+    ).toString();
   }
 
   @override
   Widget build(BuildContext context) {
     final dateFormat = MaterialLocalizations.of(context);
+    final isEditing = widget.initialEvent != null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add event')),
+      appBar: AppBar(title: Text(isEditing ? 'Edit event' : 'Add event')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -119,7 +227,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
               textCapitalization: TextCapitalization.sentences,
               decoration: const InputDecoration(
                 labelText: 'Event name',
-                hintText: 'e.g. Soccer practice',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
@@ -171,6 +278,107 @@ class _AddEventScreenState extends State<AddEventScreen> {
               value: dateFormat.formatTimeOfDay(_endTime),
               onTap: () => _selectTime(isStart: false),
             ),
+            if (!widget.disableRecurrence) ...[
+              const SizedBox(height: 20),
+              DropdownButtonFormField<_RepeatFrequency>(
+                initialValue: _repeatFrequency,
+                decoration: const InputDecoration(
+                  labelText: 'Repeat',
+                  prefixIcon: Icon(Icons.repeat_rounded),
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: _RepeatFrequency.never,
+                    child: Text('Never'),
+                  ),
+                  DropdownMenuItem(
+                    value: _RepeatFrequency.daily,
+                    child: Text('Daily'),
+                  ),
+                  DropdownMenuItem(
+                    value: _RepeatFrequency.weekly,
+                    child: Text('Weekly'),
+                  ),
+                  DropdownMenuItem(
+                    value: _RepeatFrequency.monthly,
+                    child: Text('Monthly'),
+                  ),
+                ],
+                onChanged: (frequency) {
+                  if (frequency == null) {
+                    return;
+                  }
+                  setState(() {
+                    _repeatFrequency = frequency;
+                    if (frequency == _RepeatFrequency.weekly &&
+                        _selectedWeekdays.isEmpty) {
+                      _selectedWeekdays.add(_date.weekday);
+                    }
+                    _recurrenceError = null;
+                  });
+                },
+              ),
+              if (_repeatFrequency == _RepeatFrequency.weekly) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 4,
+                  children: _weekdays.map((weekday) {
+                    final selected = _selectedWeekdays.contains(weekday.day);
+                    return FilterChip(
+                      label: Text(weekday.label),
+                      selected: selected,
+                      onSelected: (isSelected) {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedWeekdays.add(weekday.day);
+                          } else {
+                            _selectedWeekdays.remove(weekday.day);
+                          }
+                          _recurrenceError = null;
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                if (_recurrenceError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      _recurrenceError!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+              ],
+              const SizedBox(height: 8),
+              if (_repeatUntil == null)
+                TextButton.icon(
+                  onPressed: _selectRepeatUntil,
+                  icon: const Icon(Icons.event_outlined),
+                  label: const Text('Add end date'),
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: _EventDateTimeTile(
+                        icon: Icons.event_outlined,
+                        title: 'Repeat until',
+                        value: dateFormat.formatMediumDate(_repeatUntil!),
+                        onTap: _selectRepeatUntil,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Remove repeat end date',
+                      onPressed: () => setState(() => _repeatUntil = null),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+            ],
             if (_timeError != null) ...[
               const SizedBox(height: 8),
               Text(
@@ -182,7 +390,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
             FilledButton.icon(
               onPressed: _saveEvent,
               icon: const Icon(Icons.check_rounded),
-              label: const Text('Save event'),
+              label: Text(isEditing ? 'Save changes' : 'Save event'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -194,6 +402,8 @@ class _AddEventScreenState extends State<AddEventScreen> {
     );
   }
 }
+
+enum _RepeatFrequency { never, daily, weekly, monthly }
 
 class _EventDateTimeTile extends StatelessWidget {
   final IconData icon;
