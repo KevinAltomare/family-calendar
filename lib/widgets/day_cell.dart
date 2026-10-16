@@ -155,7 +155,7 @@ class _EventPreview extends StatelessWidget {
   Color _memberColor(String? familyMember) {
     return switch (familyMember?.toLowerCase()) {
       'ethan' => const Color(0xFF2E7D32),
-      'micah' => const Color(0xFFC2185B),
+      'micah' => const Color.fromARGB(255, 241, 71, 142),
       'mom' => const Color(0xFF7B1FA2),
       'dad' => const Color.fromARGB(255, 240, 220, 46),
       'eli' => const Color(0xFF1565C0),
