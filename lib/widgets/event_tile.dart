@@ -4,6 +4,7 @@ class EventTile extends StatelessWidget {
   final String title;
   final DateTime startTime;
   final DateTime? endTime;
+  final bool isAllDay;
   final String? subtitle;
   final String? familyMember;
   final Color? color;
@@ -14,6 +15,7 @@ class EventTile extends StatelessWidget {
     required this.title,
     required this.startTime,
     this.endTime,
+    this.isAllDay = false,
     this.subtitle,
     this.familyMember,
     this.color,
@@ -23,7 +25,9 @@ class EventTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eventColor = color ?? Theme.of(context).colorScheme.primary;
-    final timeLabel = _formatTime(context, startTime, endTime);
+    final timeLabel = isAllDay
+        ? 'All day'
+        : _formatTime(context, startTime, endTime);
 
     return Card(
       margin: EdgeInsets.zero,
@@ -63,13 +67,15 @@ class EventTile extends StatelessWidget {
                         ),
                       ),
                       if ((subtitle != null && subtitle!.isNotEmpty) ||
-                          (familyMember != null && familyMember!.isNotEmpty)) ...[
+                          (familyMember != null &&
+                              familyMember!.isNotEmpty)) ...[
                         const SizedBox(height: 4),
                         Text(
                           [
                             if (subtitle != null && subtitle!.isNotEmpty)
                               subtitle!,
-                            if (familyMember != null && familyMember!.isNotEmpty)
+                            if (familyMember != null &&
+                                familyMember!.isNotEmpty)
                               familyMember!,
                           ].join(' · '),
                           style: const TextStyle(

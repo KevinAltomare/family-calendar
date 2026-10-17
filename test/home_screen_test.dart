@@ -154,6 +154,10 @@ void main() {
   });
 
   testWidgets('day view adds an event to the selected date', (tester) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final selectedDate = DateTime(2026, 10, 20);
     await tester.pumpWidget(MaterialApp(home: DayView(date: selectedDate)));
 
@@ -172,6 +176,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Eli').last);
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Save event'));
     await tester.tap(find.text('Save event'));
     await tester.pumpAndSettle();
 
@@ -182,6 +187,10 @@ void main() {
   testWidgets('add event button saves an event to local storage', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
 
     await tester.tap(find.byTooltip('Add event'));
@@ -192,6 +201,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Micah').last);
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Save event'));
     await tester.tap(find.text('Save event'));
     await tester.pumpAndSettle();
 
@@ -201,6 +211,76 @@ void main() {
     await CalendarService.instance.load();
     expect(CalendarService.instance.events.single.title, 'Test event');
     expect(CalendarService.instance.events.single.familyMember, 'Micah');
+  });
+
+  testWidgets('event can be assigned to the whole family', (tester) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+
+    await tester.tap(find.byTooltip('Add event'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), 'Family game night');
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(CalendarEvent.wholeFamily).last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Save event'));
+    await tester.tap(find.text('Save event'));
+    await tester.pumpAndSettle();
+
+    expect(
+      CalendarService.instance.events.single.familyMember,
+      CalendarEvent.wholeFamily,
+    );
+
+    await CalendarService.instance.load();
+    expect(
+      CalendarService.instance.events.single.familyMember,
+      CalendarEvent.wholeFamily,
+    );
+  });
+
+  testWidgets('all-day events save, persist, and display without a time', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.tap(find.text('Today'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Add event').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), 'Family holiday');
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Whole family').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byType(CheckboxListTile));
+    await tester.tap(find.byType(CheckboxListTile));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Starts'), findsNothing);
+    expect(find.text('Ends'), findsNothing);
+
+    await tester.scrollUntilVisible(
+      find.text('Save event'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Save event'));
+    await tester.pumpAndSettle();
+
+    final savedEvent = CalendarService.instance.events.single;
+    expect(savedEvent.title, 'Family holiday');
+    expect(savedEvent.isAllDay, isTrue);
+    expect(savedEvent.startTime.hour, 0);
+    expect(savedEvent.endTime, isNull);
+    expect(find.text('All day'), findsOneWidget);
+
+    await CalendarService.instance.load();
+    expect(CalendarService.instance.events.single.isAllDay, isTrue);
   });
 
   test('event on a future date remains available after reload', () async {

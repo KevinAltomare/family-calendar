@@ -20,7 +20,14 @@ class AddEventScreen extends StatefulWidget {
 }
 
 class _AddEventScreenState extends State<AddEventScreen> {
-  static const _familyMembers = ['Ethan', 'Micah', 'Eli', 'Mom', 'Dad'];
+  static const _familyMembers = [
+    CalendarEvent.wholeFamily,
+    'Ethan',
+    'Micah',
+    'Eli',
+    'Mom',
+    'Dad',
+  ];
   static const _weekdays = [
     (label: 'S', day: DateTime.sunday),
     (label: 'M', day: DateTime.monday),
@@ -35,6 +42,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final _titleController = TextEditingController();
   String? _selectedFamilyMember;
   DateTime _date = DateTime.now();
+  bool _isAllDay = false;
   DateTime? _repeatUntil;
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
@@ -54,6 +62,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
     if (initialEvent != null) {
       _titleController.text = initialEvent.title;
       _selectedFamilyMember = initialEvent.familyMember;
+      _isAllDay = initialEvent.isAllDay;
       _startTime = TimeOfDay.fromDateTime(initialEvent.startTime);
       final endTime = initialEvent.endTime;
       if (endTime != null) {
@@ -152,17 +161,19 @@ class _AddEventScreenState extends State<AddEventScreen> {
       _date.year,
       _date.month,
       _date.day,
-      _startTime.hour,
-      _startTime.minute,
+      _isAllDay ? 0 : _startTime.hour,
+      _isAllDay ? 0 : _startTime.minute,
     );
-    final end = DateTime(
-      _date.year,
-      _date.month,
-      _date.day,
-      _endTime.hour,
-      _endTime.minute,
-    );
-    if (!end.isAfter(start)) {
+    final end = _isAllDay
+        ? null
+        : DateTime(
+            _date.year,
+            _date.month,
+            _date.day,
+            _endTime.hour,
+            _endTime.minute,
+          );
+    if (end != null && !end.isAfter(start)) {
       setState(() => _timeError = 'End time must be after the start time.');
       return;
     }
@@ -187,6 +198,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
         familyMember: _selectedFamilyMember,
         startTime: start,
         endTime: end,
+        isAllDay: _isAllDay,
         recurrenceRule: recurrenceRule,
         skipDates: recurrenceRule == null
             ? const []
@@ -240,7 +252,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
             DropdownButtonFormField<String>(
               initialValue: _selectedFamilyMember,
               decoration: const InputDecoration(
-                labelText: 'Family member',
+                labelText: 'For',
                 prefixIcon: Icon(Icons.person_outline_rounded),
                 border: OutlineInputBorder(),
               ),
@@ -254,7 +266,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                 setState(() => _selectedFamilyMember = member);
               },
               validator: (member) =>
-                  member == null ? 'Select a family member.' : null,
+                  member == null ? 'Choose who this event is for.' : null,
             ),
             const SizedBox(height: 16),
             _EventDateTimeTile(
@@ -263,20 +275,37 @@ class _AddEventScreenState extends State<AddEventScreen> {
               value: dateFormat.formatMediumDate(_date),
               onTap: _selectDate,
             ),
-            const SizedBox(height: 8),
-            _EventDateTimeTile(
-              icon: Icons.access_time_rounded,
-              title: 'Starts',
-              value: dateFormat.formatTimeOfDay(_startTime),
-              onTap: () => _selectTime(isStart: true),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('All day'),
+              value: _isAllDay,
+              onChanged: (isAllDay) {
+                if (isAllDay == null) {
+                  return;
+                }
+                setState(() {
+                  _isAllDay = isAllDay;
+                  _timeError = null;
+                });
+              },
             ),
-            const SizedBox(height: 8),
-            _EventDateTimeTile(
-              icon: Icons.schedule_rounded,
-              title: 'Ends',
-              value: dateFormat.formatTimeOfDay(_endTime),
-              onTap: () => _selectTime(isStart: false),
-            ),
+            if (!_isAllDay) ...[
+              const SizedBox(height: 8),
+              _EventDateTimeTile(
+                icon: Icons.access_time_rounded,
+                title: 'Starts',
+                value: dateFormat.formatTimeOfDay(_startTime),
+                onTap: () => _selectTime(isStart: true),
+              ),
+              const SizedBox(height: 8),
+              _EventDateTimeTile(
+                icon: Icons.schedule_rounded,
+                title: 'Ends',
+                value: dateFormat.formatTimeOfDay(_endTime),
+                onTap: () => _selectTime(isStart: false),
+              ),
+            ],
             if (!widget.disableRecurrence) ...[
               const SizedBox(height: 20),
               DropdownButtonFormField<_RepeatFrequency>(

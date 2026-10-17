@@ -69,6 +69,25 @@ void main() {
     },
   );
 
+  test('all-day recurring events retain their all-day status', () async {
+    await CalendarService.instance.addEvent(
+      CalendarEvent(
+        id: 'all-day-holiday',
+        title: 'Family holiday',
+        startTime: DateTime(2026, 10, 13),
+        isAllDay: true,
+        recurrenceRule: 'RRULE:FREQ=WEEKLY;BYDAY=TU',
+      ),
+    );
+
+    final occurrence = CalendarService.instance
+        .eventsOn(DateTime(2026, 10, 20))
+        .single;
+    expect(occurrence.isAllDay, isTrue);
+    expect(occurrence.startTime, DateTime(2026, 10, 20));
+    expect(occurrence.endTime, isNull);
+  });
+
   test(
     'editing one occurrence skips the series date and adds a one-off',
     () async {

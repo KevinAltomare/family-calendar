@@ -1,9 +1,12 @@
 class CalendarEvent {
+  static const wholeFamily = 'Whole family';
+
   final String id;
   final String title;
   final String? familyMember;
   final DateTime startTime;
   final DateTime? endTime;
+  final bool isAllDay;
   final String? recurrenceRule;
   final List<DateTime> skipDates;
   final DateTime? recurrenceInstanceDate;
@@ -14,6 +17,7 @@ class CalendarEvent {
     this.familyMember,
     required this.startTime,
     this.endTime,
+    this.isAllDay = false,
     this.recurrenceRule,
     this.skipDates = const [],
     this.recurrenceInstanceDate,
@@ -28,6 +32,7 @@ class CalendarEvent {
       familyMember: familyMember,
       startTime: startTime,
       endTime: endTime?.add(startTime.difference(this.startTime)),
+      isAllDay: isAllDay,
       recurrenceRule: recurrenceRule,
       skipDates: skipDates,
       recurrenceInstanceDate: DateTime(
@@ -44,6 +49,7 @@ class CalendarEvent {
     'familyMember': familyMember,
     'startTime': startTime.toIso8601String(),
     'endTime': endTime?.toIso8601String(),
+    'isAllDay': isAllDay,
     'recurrenceRule': recurrenceRule,
     'skipDates': skipDates.map(_dateOnlyString).toList(),
   };
@@ -57,6 +63,7 @@ class CalendarEvent {
       endTime: json['endTime'] == null
           ? null
           : DateTime.parse(json['endTime'] as String),
+      isAllDay: json['isAllDay'] as bool? ?? false,
       recurrenceRule: json['recurrenceRule'] as String?,
       skipDates: (json['skipDates'] as List<dynamic>? ?? [])
           .map((date) => DateTime.parse(date as String))

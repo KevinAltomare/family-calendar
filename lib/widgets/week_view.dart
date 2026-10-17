@@ -171,6 +171,7 @@ class _WeekViewState extends State<WeekView> {
                       title: event.title,
                       startTime: event.startTime,
                       endTime: event.endTime,
+                      isAllDay: event.isAllDay,
                       familyMember: event.familyMember,
                       onTap: () => handleEventTap(context, event),
                     );

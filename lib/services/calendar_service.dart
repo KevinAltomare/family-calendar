@@ -121,6 +121,7 @@ class CalendarService extends ChangeNotifier {
         familyMember: event.familyMember,
         startTime: event.startTime,
         endTime: event.endTime,
+        isAllDay: event.isAllDay,
         recurrenceRule: event.recurrenceRule,
         skipDates: [
           ...event.skipDates,
@@ -147,6 +148,7 @@ class CalendarService extends ChangeNotifier {
         familyMember: series.familyMember,
         startTime: series.startTime,
         endTime: series.endTime,
+        isAllDay: series.isAllDay,
         recurrenceRule: series.recurrenceRule,
         skipDates: [
           ...series.skipDates,
@@ -165,6 +167,7 @@ class CalendarService extends ChangeNotifier {
           familyMember: editedEvent.familyMember,
           startTime: editedEvent.startTime,
           endTime: editedEvent.endTime,
+          isAllDay: editedEvent.isAllDay,
         ),
       );
     await _saveEvents(updatedEvents);
