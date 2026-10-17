@@ -146,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _MonthScreen extends StatelessWidget {
+class _MonthScreen extends StatefulWidget {
   final DateTime month;
   final ValueChanged<DateTime> onMonthChanged;
   final VoidCallback onOpenSettings;
@@ -158,10 +158,18 @@ class _MonthScreen extends StatelessWidget {
   });
 
   @override
+  State<_MonthScreen> createState() => _MonthScreenState();
+}
+
+class _MonthScreenState extends State<_MonthScreen> {
+  double _horizontalDragDistance = 0;
+
+  @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final isLandscape =
         MediaQuery.orientationOf(context) == Orientation.landscape;
+    final month = widget.month;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -205,7 +213,7 @@ class _MonthScreen extends StatelessWidget {
                         IconButton(
                           tooltip: 'Previous month',
                           visualDensity: VisualDensity.compact,
-                          onPressed: () => onMonthChanged(
+                          onPressed: () => widget.onMonthChanged(
                             DateTime(month.year, month.month - 1),
                           ),
                           icon: const Icon(Icons.chevron_left_rounded),
@@ -213,7 +221,7 @@ class _MonthScreen extends StatelessWidget {
                         IconButton(
                           tooltip: 'Next month',
                           visualDensity: VisualDensity.compact,
-                          onPressed: () => onMonthChanged(
+                          onPressed: () => widget.onMonthChanged(
                             DateTime(month.year, month.month + 1),
                           ),
                           icon: const Icon(Icons.chevron_right_rounded),
@@ -235,7 +243,7 @@ class _MonthScreen extends StatelessWidget {
               ),
               IconButton(
                 tooltip: 'Settings',
-                onPressed: onOpenSettings,
+                onPressed: widget.onOpenSettings,
                 icon: const Icon(Icons.settings_outlined),
               ),
             ],
@@ -266,7 +274,23 @@ class _MonthScreen extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: MonthView(year: month.year, month: month.month),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragStart: (_) => _horizontalDragDistance = 0,
+            onHorizontalDragUpdate: (details) {
+              _horizontalDragDistance += details.delta.dx;
+            },
+            onHorizontalDragEnd: (_) {
+              if (_horizontalDragDistance.abs() >= 50) {
+                final direction = _horizontalDragDistance < 0 ? 1 : -1;
+                widget.onMonthChanged(
+                  DateTime(month.year, month.month + direction),
+                );
+              }
+              _horizontalDragDistance = 0;
+            },
+            child: MonthView(year: month.year, month: month.month),
+          ),
         ),
       ],
     );

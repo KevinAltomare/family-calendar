@@ -3,6 +3,7 @@ import 'package:calendar_app/screens/add_event_screen.dart';
 import 'package:calendar_app/screens/home_screen.dart';
 import 'package:calendar_app/services/calendar_service.dart';
 import 'package:calendar_app/services/planner_service.dart';
+import 'package:calendar_app/widgets/day_cell.dart';
 import 'package:calendar_app/widgets/day_view.dart';
 import 'package:calendar_app/widgets/month_view.dart';
 import 'package:flutter/material.dart';
@@ -101,6 +102,44 @@ void main() {
     await tester.tap(find.byTooltip('Previous year'));
     await tester.pumpAndSettle();
     expect(find.text('$currentYear'), findsOneWidget);
+  });
+
+  testWidgets('month view swipes between months', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+
+    final now = DateTime.now();
+    final nextMonth = DateTime(now.year, now.month + 1);
+    await tester.drag(find.byType(MonthView), const Offset(-240, 0));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('${_monthName(nextMonth.month)} ${nextMonth.year}'),
+      findsOneWidget,
+    );
+
+    await tester.drag(find.byType(MonthView), const Offset(240, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('${_monthName(now.month)} ${now.year}'), findsOneWidget);
+  });
+
+  testWidgets('month day cells have subtle outlines', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: DayCell(day: 1, date: DateTime(2026, 1, 1))),
+      ),
+    );
+
+    final cell = tester.widget<Container>(
+      find
+          .descendant(
+            of: find.byType(DayCell),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    final decoration = cell.decoration! as BoxDecoration;
+    expect(decoration.border, isNotNull);
+    expect(decoration.color, Colors.white);
   });
 
   testWidgets('landscape month cells preview colored events and overflow', (
@@ -332,3 +371,18 @@ void main() {
     );
   });
 }
+
+String _monthName(int month) => const [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+][month - 1];

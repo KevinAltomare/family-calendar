@@ -51,7 +51,13 @@ class DayCell extends StatelessWidget {
         margin: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          color: isToday ? primary.withValues(alpha: 0.1) : Colors.transparent,
+          color: isToday ? primary.withValues(alpha: 0.1) : Colors.white,
+          border: Border.all(
+            color: isToday
+                ? primary.withValues(alpha: 0.35)
+                : const Color(0xFFE4E8ED),
+            width: isToday ? 1 : 0.7,
+          ),
         ),
         child: showEventPreviews
             ? Padding(
