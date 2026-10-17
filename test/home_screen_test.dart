@@ -172,7 +172,7 @@ void main() {
       findsOneWidget,
     );
     await tester.enterText(find.byType(TextFormField), 'Library visit');
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Eli').last);
     await tester.pumpAndSettle();
@@ -197,7 +197,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField), 'Test event');
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Micah').last);
     await tester.pumpAndSettle();
@@ -223,9 +223,13 @@ void main() {
     await tester.tap(find.byTooltip('Add event'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), 'Family game night');
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text(CalendarEvent.wholeFamily).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dad').last);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Save event'));
     await tester.tap(find.text('Save event'));
@@ -235,12 +239,14 @@ void main() {
       CalendarService.instance.events.single.familyMember,
       CalendarEvent.wholeFamily,
     );
+    expect(CalendarService.instance.events.single.responsiblePerson, 'Dad');
 
     await CalendarService.instance.load();
     expect(
       CalendarService.instance.events.single.familyMember,
       CalendarEvent.wholeFamily,
     );
+    expect(CalendarService.instance.events.single.responsiblePerson, 'Dad');
   });
 
   testWidgets('all-day events save, persist, and display without a time', (
@@ -253,7 +259,7 @@ void main() {
     await tester.tap(find.byTooltip('Add event').first);
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), 'Family holiday');
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Whole family').last);
     await tester.pumpAndSettle();
@@ -281,6 +287,30 @@ void main() {
 
     await CalendarService.instance.load();
     expect(CalendarService.instance.events.single.isAllDay, isTrue);
+  });
+
+  testWidgets('event responsibility displays subtly in the day view', (
+    tester,
+  ) async {
+    final eventDate = DateTime(2026, 10, 20);
+    await CalendarService.instance.addEvent(
+      CalendarEvent(
+        id: 'soccer-driving',
+        title: 'Soccer practice',
+        familyMember: 'Ethan',
+        responsiblePerson: 'Dad',
+        startTime: DateTime(2026, 10, 20, 16),
+        endTime: DateTime(2026, 10, 20, 17),
+      ),
+    );
+
+    await tester.pumpWidget(MaterialApp(home: DayView(date: eventDate)));
+
+    expect(find.text('Handled by Dad'), findsOneWidget);
+    expect(find.text('Ethan'), findsOneWidget);
+
+    await CalendarService.instance.load();
+    expect(CalendarService.instance.events.single.responsiblePerson, 'Dad');
   });
 
   test('event on a future date remains available after reload', () async {

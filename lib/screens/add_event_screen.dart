@@ -41,6 +41,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   String? _selectedFamilyMember;
+  String _responsiblePerson = '';
   DateTime _date = DateTime.now();
   bool _isAllDay = false;
   DateTime? _repeatUntil;
@@ -62,6 +63,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
     if (initialEvent != null) {
       _titleController.text = initialEvent.title;
       _selectedFamilyMember = initialEvent.familyMember;
+      _responsiblePerson = initialEvent.responsiblePerson ?? '';
       _isAllDay = initialEvent.isAllDay;
       _startTime = TimeOfDay.fromDateTime(initialEvent.startTime);
       final endTime = initialEvent.endTime;
@@ -196,6 +198,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
             DateTime.now().microsecondsSinceEpoch.toString(),
         title: _titleController.text.trim(),
         familyMember: _selectedFamilyMember,
+        responsiblePerson: _responsiblePerson.isEmpty
+            ? null
+            : _responsiblePerson,
         startTime: start,
         endTime: end,
         isAllDay: _isAllDay,
@@ -267,6 +272,25 @@ class _AddEventScreenState extends State<AddEventScreen> {
               },
               validator: (member) =>
                   member == null ? 'Choose who this event is for.' : null,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _responsiblePerson,
+              decoration: const InputDecoration(
+                labelText: 'Handled by',
+                prefixIcon: Icon(Icons.directions_car_outlined),
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: '', child: Text('No one assigned')),
+                DropdownMenuItem(value: 'Mom', child: Text('Mom')),
+                DropdownMenuItem(value: 'Dad', child: Text('Dad')),
+              ],
+              onChanged: (person) {
+                if (person != null) {
+                  setState(() => _responsiblePerson = person);
+                }
+              },
             ),
             const SizedBox(height: 16),
             _EventDateTimeTile(

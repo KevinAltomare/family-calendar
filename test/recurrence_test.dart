@@ -74,6 +74,7 @@ void main() {
       CalendarEvent(
         id: 'all-day-holiday',
         title: 'Family holiday',
+        responsiblePerson: 'Mom',
         startTime: DateTime(2026, 10, 13),
         isAllDay: true,
         recurrenceRule: 'RRULE:FREQ=WEEKLY;BYDAY=TU',
@@ -84,6 +85,7 @@ void main() {
         .eventsOn(DateTime(2026, 10, 20))
         .single;
     expect(occurrence.isAllDay, isTrue);
+    expect(occurrence.responsiblePerson, 'Mom');
     expect(occurrence.startTime, DateTime(2026, 10, 20));
     expect(occurrence.endTime, isNull);
   });
@@ -157,8 +159,10 @@ void main() {
     await tester.tap(find.text('Open form'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), 'Weekly practice');
-    await tester.ensureVisible(find.byType(DropdownButtonFormField<String>));
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.ensureVisible(
+      find.byType(DropdownButtonFormField<String>).first,
+    );
+    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ethan').last);
     await tester.pumpAndSettle();

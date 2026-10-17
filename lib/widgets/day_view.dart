@@ -83,6 +83,8 @@ class DayView extends StatelessWidget {
                 endTime: event.endTime,
                 isAllDay: event.isAllDay,
                 familyMember: event.familyMember,
+                responsiblePerson: event.responsiblePerson,
+                showResponsibility: true,
                 onTap: () => handleEventTap(context, event),
               );
             },

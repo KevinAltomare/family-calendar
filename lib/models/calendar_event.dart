@@ -4,6 +4,7 @@ class CalendarEvent {
   final String id;
   final String title;
   final String? familyMember;
+  final String? responsiblePerson;
   final DateTime startTime;
   final DateTime? endTime;
   final bool isAllDay;
@@ -15,6 +16,7 @@ class CalendarEvent {
     required this.id,
     required this.title,
     this.familyMember,
+    this.responsiblePerson,
     required this.startTime,
     this.endTime,
     this.isAllDay = false,
@@ -30,6 +32,7 @@ class CalendarEvent {
       id: id,
       title: title,
       familyMember: familyMember,
+      responsiblePerson: responsiblePerson,
       startTime: startTime,
       endTime: endTime?.add(startTime.difference(this.startTime)),
       isAllDay: isAllDay,
@@ -47,6 +50,7 @@ class CalendarEvent {
     'id': id,
     'title': title,
     'familyMember': familyMember,
+    'responsiblePerson': responsiblePerson,
     'startTime': startTime.toIso8601String(),
     'endTime': endTime?.toIso8601String(),
     'isAllDay': isAllDay,
@@ -59,6 +63,7 @@ class CalendarEvent {
       id: json['id'] as String,
       title: json['title'] as String,
       familyMember: json['familyMember'] as String?,
+      responsiblePerson: json['responsiblePerson'] as String?,
       startTime: DateTime.parse(json['startTime'] as String),
       endTime: json['endTime'] == null
           ? null

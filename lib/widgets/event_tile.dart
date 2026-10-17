@@ -7,6 +7,8 @@ class EventTile extends StatelessWidget {
   final bool isAllDay;
   final String? subtitle;
   final String? familyMember;
+  final String? responsiblePerson;
+  final bool showResponsibility;
   final Color? color;
   final VoidCallback? onTap;
 
@@ -18,6 +20,8 @@ class EventTile extends StatelessWidget {
     this.isAllDay = false,
     this.subtitle,
     this.familyMember,
+    this.responsiblePerson,
+    this.showResponsibility = false,
     this.color,
     this.onTap,
   });
@@ -84,6 +88,10 @@ class EventTile extends StatelessWidget {
                           ),
                         ),
                       ],
+                      if (showResponsibility && responsiblePerson != null) ...[
+                        const SizedBox(height: 7),
+                        _ResponsibilityTag(person: responsiblePerson!),
+                      ],
                     ],
                   ),
                 ),
@@ -105,5 +113,37 @@ class EventTile extends StatelessWidget {
     }
     final endLabel = localizations.formatTimeOfDay(TimeOfDay.fromDateTime(end));
     return '$startLabel – $endLabel';
+  }
+}
+
+class _ResponsibilityTag extends StatelessWidget {
+  final String person;
+
+  const _ResponsibilityTag({required this.person});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F3F5),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.person_outline_rounded, size: 13),
+          const SizedBox(width: 4),
+          Text(
+            'Handled by $person',
+            style: const TextStyle(
+              color: Color(0xFF687381),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
