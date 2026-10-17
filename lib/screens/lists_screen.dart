@@ -135,19 +135,15 @@ class _AddItemDialogState extends State<_AddItemDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isShopping = widget.list == PlannerList.shopping;
     return AlertDialog(
-      title: Text(isShopping ? 'Add to shopping' : 'Add a to-do'),
+      title: Text(
+        widget.list == PlannerList.shopping ? 'Add to shopping' : 'Add a to-do',
+      ),
       content: TextField(
         controller: _controller,
         autofocus: true,
         textCapitalization: TextCapitalization.sentences,
-        decoration: InputDecoration(
-          hintText: isShopping
-              ? 'e.g. Milk'
-              : 'e.g. Book a dentist appointment',
-          border: const OutlineInputBorder(),
-        ),
+        decoration: InputDecoration(border: const OutlineInputBorder()),
         onSubmitted: (value) => Navigator.pop(context, value),
       ),
       actions: [

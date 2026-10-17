@@ -244,7 +244,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
                 prefixIcon: Icon(Icons.person_outline_rounded),
                 border: OutlineInputBorder(),
               ),
-              hint: const Text('Select a family member'),
               items: _familyMembers
                   .map(
                     (member) =>

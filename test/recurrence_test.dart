@@ -138,8 +138,8 @@ void main() {
     await tester.tap(find.text('Open form'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), 'Weekly practice');
-    await tester.ensureVisible(find.text('Select a family member'));
-    await tester.tap(find.text('Select a family member'));
+    await tester.ensureVisible(find.byType(DropdownButtonFormField<String>));
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ethan').last);
     await tester.pumpAndSettle();

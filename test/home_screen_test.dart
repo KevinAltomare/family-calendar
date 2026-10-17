@@ -168,7 +168,7 @@ void main() {
       findsOneWidget,
     );
     await tester.enterText(find.byType(TextFormField), 'Library visit');
-    await tester.tap(find.text('Select a family member'));
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Eli').last);
     await tester.pumpAndSettle();
@@ -188,7 +188,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField), 'Test event');
-    await tester.tap(find.text('Select a family member'));
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Micah').last);
     await tester.pumpAndSettle();
