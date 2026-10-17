@@ -2,6 +2,7 @@ import 'package:calendar_app/models/calendar_event.dart';
 import 'package:calendar_app/screens/add_event_screen.dart';
 import 'package:calendar_app/screens/home_screen.dart';
 import 'package:calendar_app/services/calendar_service.dart';
+import 'package:calendar_app/services/planner_service.dart';
 import 'package:calendar_app/widgets/day_view.dart';
 import 'package:calendar_app/widgets/month_view.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     await CalendarService.instance.load();
+    await PlannerService.instance.load();
   });
 
   testWidgets('bottom navigation switches between week and today', (
@@ -27,6 +29,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('No events for this day'), findsOneWidget);
   });
+
+  testWidgets(
+    'shopping and to-do items can be added, completed, and restored',
+    (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+      await tester.tap(find.text('Lists'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Add to Groceries'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Milk');
+      await tester.tap(find.text('Add'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Add to To-do'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Book dentist');
+      await tester.tap(find.text('Add'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Milk'), findsOneWidget);
+      expect(find.text('Book dentist'), findsOneWidget);
+
+      await tester.tap(find.byType(Checkbox).last);
+      await tester.pumpAndSettle();
+      expect(
+        PlannerService.instance.items.where((item) => item.isCompleted),
+        hasLength(1),
+      );
+
+      await PlannerService.instance.load();
+      expect(PlannerService.instance.items, hasLength(2));
+      expect(
+        PlannerService.instance.items.where((item) => item.isCompleted),
+        hasLength(1),
+      );
+    },
+  );
 
   testWidgets('year view browses years and opens navigable months', (
     tester,

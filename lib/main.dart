@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import 'services/calendar_service.dart';
+import 'services/planner_service.dart';
 import 'screens/home_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await CalendarService.instance.load();
+  await PlannerService.instance.load();
   runApp(const CalendarDisplayApp());
 }
 

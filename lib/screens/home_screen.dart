@@ -7,6 +7,7 @@ import '../widgets/month_view.dart';
 import '../widgets/week_view.dart';
 import '../widgets/year_view.dart';
 import 'add_event_screen.dart';
+import 'lists_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -83,9 +84,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             WeekView(initialDate: now),
             DayView(date: DateTime(now.year, now.month, now.day)),
+            const ListsScreen(),
           ],
         ),
       ),
+      floatingActionButton: _selectedIndex == 4
+          ? null
+          : FloatingActionButton(
+              tooltip: 'Add event',
+              onPressed: _openAddEvent,
+              child: const Icon(Icons.add_rounded),
+            ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -123,15 +132,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: colors.primary,
               onTap: () => setState(() => _selectedIndex = 3),
             ),
-            IconButton.filled(
-              tooltip: 'Add event',
-              onPressed: _openAddEvent,
-              icon: const Icon(Icons.add_rounded),
-              style: IconButton.styleFrom(
-                backgroundColor: colors.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(48, 48),
-              ),
+            _NavigationItem(
+              icon: Icons.checklist_rounded,
+              label: 'Lists',
+              selected: _selectedIndex == 4,
+              color: colors.primary,
+              onTap: () => setState(() => _selectedIndex = 4),
             ),
           ],
         ),
