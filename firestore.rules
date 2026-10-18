@@ -1,0 +1,74 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isFamilyMember(familyId) {
+      return signedIn()
+        && request.auth.uid in get(
+          /databases/$(database)/documents/families/$(familyId)
+        ).data.memberIds;
+    }
+
+    match /families/{familyId} {
+      allow get: if isFamilyMember(familyId);
+      allow list, delete: if false;
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.memberIds == [request.auth.uid]
+        && request.resource.data.name is string
+        && request.resource.data.inviteCode is string
+        && getAfter(
+          /databases/$(database)/documents/familyInvites/$(request.resource.data.inviteCode)
+        ).data.familyId == familyId;
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['memberIds'])
+        && (
+          (
+            request.auth.uid in resource.data.memberIds
+            && request.resource.data.memberIds == resource.data.memberIds
+          )
+          || (
+            !(request.auth.uid in resource.data.memberIds)
+            && request.resource.data.memberIds.size()
+              == resource.data.memberIds.size() + 1
+            && request.resource.data.memberIds.hasAll(resource.data.memberIds)
+            && request.resource.data.memberIds.hasAny([request.auth.uid])
+          )
+        )
+        && get(
+          /databases/$(database)/documents/familyInvites/$(resource.data.inviteCode)
+        ).data.familyId == familyId;
+
+      match /events/{eventId} {
+        allow read: if isFamilyMember(familyId);
+        allow create, update: if isFamilyMember(familyId)
+          && request.resource.data.id == eventId;
+        allow delete: if isFamilyMember(familyId);
+      }
+
+      match /items/{itemId} {
+        allow read: if isFamilyMember(familyId);
+        allow create, update: if isFamilyMember(familyId)
+          && request.resource.data.id == itemId;
+        allow delete: if isFamilyMember(familyId);
+      }
+    }
+
+    match /familyInvites/{inviteCode} {
+      allow get: if signedIn();
+      allow list, update, delete: if false;
+      allow create: if signedIn()
+        && getAfter(
+          /databases/$(database)/documents/families/$(request.resource.data.familyId)
+        ).data.inviteCode == inviteCode
+        && request.auth.uid in getAfter(
+          /databases/$(database)/documents/families/$(request.resource.data.familyId)
+        ).data.memberIds;
+    }
+  }
+}

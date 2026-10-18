@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math' show min;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:rrule/rrule.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,7 +16,11 @@ class CalendarService extends ChangeNotifier {
   static const _eventsKey = 'calendar_events';
 
   List<CalendarEvent> _events = [];
+  String? _familyId;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _eventsSubscription;
+  Object? _syncError;
   List<CalendarEvent> get events => List.unmodifiable(_events);
+  Object? get syncError => _syncError;
 
   Future<void> load() async {
     final preferences = await SharedPreferences.getInstance();
@@ -30,6 +37,77 @@ class CalendarService extends ChangeNotifier {
             (first, second) => first.startTime.compareTo(second.startTime),
           );
     notifyListeners();
+  }
+
+  Future<void> connectToFamily(
+    String familyId, {
+    bool uploadLocalData = false,
+  }) async {
+    final localEvents = List<CalendarEvent>.of(_events);
+    await _eventsSubscription?.cancel();
+    _familyId = familyId;
+    _syncError = null;
+    final collection = FirebaseFirestore.instance
+        .collection('families')
+        .doc(familyId)
+        .collection('events');
+    final firstSnapshot = Completer<QuerySnapshot<Map<String, dynamic>>>();
+    _eventsSubscription = collection.snapshots().listen(
+      (snapshot) {
+        try {
+          _events =
+              snapshot.docs
+                  .map((doc) => CalendarEvent.fromJson(doc.data()))
+                  .toList()
+                ..sort(
+                  (first, second) =>
+                      first.startTime.compareTo(second.startTime),
+                );
+          _syncError = null;
+          notifyListeners();
+          if (!firstSnapshot.isCompleted) {
+            firstSnapshot.complete(snapshot);
+          }
+        } catch (error, stackTrace) {
+          _syncError = error;
+          notifyListeners();
+          if (!firstSnapshot.isCompleted) {
+            firstSnapshot.completeError(error, stackTrace);
+          }
+        }
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        _syncError = error;
+        notifyListeners();
+        if (!firstSnapshot.isCompleted) {
+          firstSnapshot.completeError(error, stackTrace);
+        }
+      },
+    );
+    final snapshot = await firstSnapshot.future;
+    if (uploadLocalData && snapshot.docs.isEmpty && localEvents.isNotEmpty) {
+      for (var start = 0; start < localEvents.length; start += 500) {
+        final batch = FirebaseFirestore.instance.batch();
+        for (final event in localEvents.sublist(
+          start,
+          min(start + 500, localEvents.length),
+        )) {
+          batch.set(
+            collection.doc(event.id),
+            Map<String, dynamic>.from(event.toJson()),
+          );
+        }
+        await batch.commit();
+      }
+    }
+  }
+
+  Future<void> disconnectFromFamily() async {
+    await _eventsSubscription?.cancel();
+    _eventsSubscription = null;
+    _familyId = null;
+    _syncError = null;
+    await load();
   }
 
   List<CalendarEvent> eventsOn(DateTime date) {
@@ -179,13 +257,51 @@ class CalendarService extends ChangeNotifier {
   Future<void> _saveEvents(List<CalendarEvent> events) async {
     final updatedEvents = [...events]
       ..sort((first, second) => first.startTime.compareTo(second.startTime));
-    final encodedEvents = updatedEvents
-        .map((event) => jsonEncode(event.toJson()))
-        .toList();
-    final preferences = await SharedPreferences.getInstance();
-    final saved = await preferences.setStringList(_eventsKey, encodedEvents);
-    if (!saved) {
-      throw StateError('The event could not be saved to local storage.');
+    if (_familyId == null) {
+      final encodedEvents = updatedEvents
+          .map((event) => jsonEncode(event.toJson()))
+          .toList();
+      final preferences = await SharedPreferences.getInstance();
+      final saved = await preferences.setStringList(_eventsKey, encodedEvents);
+      if (!saved) {
+        throw StateError('The event could not be saved to local storage.');
+      }
+    } else {
+      final collection = FirebaseFirestore.instance
+          .collection('families')
+          .doc(_familyId)
+          .collection('events');
+      final oldEventsById = {for (final event in _events) event.id: event};
+      final newEventsById = {
+        for (final event in updatedEvents) event.id: event,
+      };
+      final batch = FirebaseFirestore.instance.batch();
+      var writeCount = 0;
+
+      for (final event in updatedEvents) {
+        final oldEvent = oldEventsById[event.id];
+        if (oldEvent != null &&
+            jsonEncode(oldEvent.toJson()) == jsonEncode(event.toJson())) {
+          continue;
+        }
+        batch.set(
+          collection.doc(event.id),
+          Map<String, dynamic>.from(event.toJson()),
+        );
+        writeCount++;
+      }
+      for (final id in oldEventsById.keys) {
+        if (!newEventsById.containsKey(id)) {
+          batch.delete(collection.doc(id));
+          writeCount++;
+        }
+      }
+      if (writeCount > 500) {
+        throw StateError('Too many event changes to save in one operation.');
+      }
+      if (writeCount > 0) {
+        await batch.commit();
+      }
     }
 
     _events = updatedEvents;

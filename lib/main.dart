@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 
+import 'firebase_configuration.dart';
+import 'screens/app_gate.dart';
 import 'services/calendar_service.dart';
 import 'services/planner_service.dart';
 import 'screens/home_screen.dart';
@@ -8,6 +11,11 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await CalendarService.instance.load();
   await PlannerService.instance.load();
+  if (FirebaseConfiguration.isConfigured) {
+    await Firebase.initializeApp(
+      options: FirebaseConfiguration.currentPlatform,
+    );
+  }
   runApp(const CalendarDisplayApp());
 }
 
@@ -18,7 +26,9 @@ class CalendarDisplayApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: HomeScreen(),
+      home: FirebaseConfiguration.isConfigured
+          ? const AppGate()
+          : const HomeScreen(),
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(

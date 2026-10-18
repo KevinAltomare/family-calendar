@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../firebase_configuration.dart';
+import '../services/calendar_service.dart';
+import '../services/family_service.dart';
+import '../services/planner_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -10,6 +16,18 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _eventRemindersEnabled = true;
   int _weekStartsOn = DateTime.sunday;
+
+  Future<void> _signOut() async {
+    try {
+      await FamilyService.instance.signOut();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not sign out: $error')));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +48,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: _weekStartsOn,
                   underline: const SizedBox.shrink(),
                   items: const [
-                    DropdownMenuItem(value: DateTime.sunday, child: Text('Sunday')),
-                    DropdownMenuItem(value: DateTime.monday, child: Text('Monday')),
+                    DropdownMenuItem(
+                      value: DateTime.sunday,
+                      child: Text('Sunday'),
+                    ),
+                    DropdownMenuItem(
+                      value: DateTime.monday,
+                      child: Text('Monday'),
+                    ),
                   ],
                   onChanged: (value) {
                     if (value != null) {
@@ -60,6 +84,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
+          if (FirebaseConfiguration.isConfigured) ...[
+            const SizedBox(height: 16),
+            _SettingsSection(
+              title: 'FAMILY SYNC',
+              children: [
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  leading: const _SettingsIcon(
+                    icon: Icons.family_restroom_rounded,
+                  ),
+                  title: Text(
+                    FamilyService.instance.familyName ?? 'Family calendar',
+                  ),
+                  subtitle: const Text('Shared events and lists'),
+                ),
+                if (FamilyService.instance.inviteCode case final code?) ...[
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    leading: const _SettingsIcon(
+                      icon: Icons.group_add_outlined,
+                    ),
+                    title: const Text('Invite code'),
+                    subtitle: SelectableText(code),
+                    trailing: IconButton(
+                      tooltip: 'Copy invite code',
+                      onPressed: () async {
+                        await Clipboard.setData(ClipboardData(text: code));
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Invite code copied')),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.copy_rounded),
+                    ),
+                  ),
+                ],
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  leading: const _SettingsIcon(icon: Icons.sync_rounded),
+                  title: const Text('Sync status'),
+                  subtitle: Text(
+                    _syncErrorText ??
+                        'Changes sync automatically when connected.',
+                  ),
+                ),
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  leading: const _SettingsIcon(icon: Icons.logout_rounded),
+                  title: const Text('Sign out'),
+                  onTap: _signOut,
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 16),
           const _SettingsSection(
             title: 'ABOUT',
@@ -76,16 +155,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
+  String? get _syncErrorText {
+    final error =
+        CalendarService.instance.syncError ?? PlannerService.instance.syncError;
+    return error == null ? null : 'Sync error: $error';
+  }
 }
 
 class _SettingsSection extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _SettingsSection({
-    required this.title,
-    required this.children,
-  });
+  const _SettingsSection({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -108,9 +190,7 @@ class _SettingsSection extends StatelessWidget {
           margin: EdgeInsets.zero,
           color: Colors.white,
           clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: children,
-          ),
+          child: Column(children: children),
         ),
       ],
     );
@@ -131,11 +211,7 @@ class _SettingsIcon extends StatelessWidget {
         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(
-        icon,
-        color: Theme.of(context).colorScheme.primary,
-        size: 20,
-      ),
+      child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
     );
   }
 }
